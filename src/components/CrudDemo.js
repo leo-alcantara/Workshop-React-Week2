@@ -1,7 +1,8 @@
 import axios from 'axios';
-import React, { useEffect, useState } from 'react';
-import Header from './Header';
-import TableData from './TableData';
+import React, { useEffect, useState, } from 'react';
+import { useForm } from 'react-hook-form';
+
+
 
 const baseURL = "http://localhost:8080/api/v1/person/";
 
@@ -15,11 +16,12 @@ const CrudDemo = () => {
     const [person, setPerson] = useState(initialData);
     const [id, setId] = useState(0);
    
+    const [refresh, setRefresh] = useState(false);
 
     const [showDetais, setShowDetails] = useState(false);
 
-    useEffect( async ()=>{
-        await axios.get(baseURL).then((res)=>{
+    useEffect(()=>{
+        axios.get(baseURL).then((res)=>{
             if(res.status === 200){
                 console.log(res.data);
                 setPersons(res.data);
@@ -37,7 +39,7 @@ const CrudDemo = () => {
             }
             setMessage();
         }); 
-    },[]);
+    },[refresh]);
 
     const TableHeader = () => {
         return(
@@ -54,6 +56,8 @@ const CrudDemo = () => {
      };
 
      const TableRow = (props) => {
+         console.log("++++++++++++++++++++++++++++++");
+         console.log(props.list);
         return (
     <tbody>
         {
@@ -79,14 +83,10 @@ const CrudDemo = () => {
         }
 
         const deletePerson = async () => {
-            await axios.delete(`${baseURL}${id}`).then(res => {
-                if(res.status === 200){
+            await axios.delete(`${baseURL}${props.person.id}`).then(res => {
                     setMessage("Person successfully deleted!");
-                } else {
-                    setMessage("API ERRO: ", res.status);
-                }
-                setError();
-            }).catch(err => {
+                    setRefresh(!refresh);
+                }).catch(err => {
                 if(err.message){
                     setError(err.response.data.statusText);
                 } else {
@@ -96,12 +96,12 @@ const CrudDemo = () => {
             })
         };
 
-        const updatePerson = () => {
-            const data = {id:person.id, title:person.title, firstName:person.firstName, lastName:person.lastName, email:person.email};
+        const updatePerson = async () => {
+            const data = {id: person.id, title: person.title, firstName: person.firstName, lastName: person.lastName, email: person.email};
             
-            axios.put(baseURL, data).then(res => {
+          await axios.put(baseURL, data).then(res => {
                 if(res.status === 204){
-                    setPerson(res.data);
+                    setPerson(res.data.value);
                     setMessage("Operation successfully completed");
                 } else {
                     setMessage("API ERROR: ", res.status);
@@ -122,19 +122,19 @@ const CrudDemo = () => {
 
         return (
             <div>  
-                <button type="button" className="btn btn-primary text-white m-1" onClick={showData}>Show Details</button> 
-                <button type="button" className="btn btn-danger text-white m-1" onClick={deletePerson}>Delete Person</button> 
-                <button type="button" className="btn btn-warning text-white m-1" onClick={updatePerson}>Update Person</button> 
+                <button type="button" className="btn btn-primary btn-sm text-white m-1" onClick={showData}>Show Details</button> 
+                <button type="button" className="btn btn-danger btn-sm text-white m-1" onClick={deletePerson}>Delete Person</button> 
+                <button type="button" className="btn btn-warning btn-sm text-white m-1" onClick={updatePerson}>Update Person</button> 
             </div>
             
         );
     }
 
     const ShowPersonDetails = () => {
-        console.log(person);
+        //console.log(person);
         if(showDetais){
             return(<div className="card">
-                <div className="card-header">
+                <div className="card-header bg-info text-white">
                     Person Details
                 </div>
                 <div className="card-body">
@@ -143,8 +143,8 @@ const CrudDemo = () => {
                     <h5 className="card-title">Person Name: {person.firstName} {person.lastName}</h5>                     
                     <h5 className="card-title">Person E-mail: {person.email}</h5>
                 </div>
-                <div className="card-footer">
-                    <button type="button" className="btn btn-outline-dark" onClick={() => {setShowDetails(false); setPerson({person})}}>Hide Details</button>
+                <div className="card-footer bg-dark">
+                    <button type="button" className="btn btn-outline-danger" onClick={() => {setShowDetails(false); setPerson({person})}}>Hide Details</button>
                 </div>  
             </div>
                 );
@@ -154,15 +154,93 @@ const CrudDemo = () => {
         
     };
 
+    const Form = () => {
+       
+        const {register, handleSubmit, formState:{errors}} = useForm();
+        
+        /*const saveData = (data) => {
+        console.log(data);
+        };*/
+
+        const savePerson = async (data) => {
+            console.log(data);
+            await axios.post(baseURL, data).then(res => {
+                console.log("RESPONSE", res);
+                if(res.status === 201){
+                   
+                    setMessage("Operation successfully completed");
+                    setRefresh(!refresh);
+                } else {
+                    setMessage("API ERROR: ", res.status);
+                }
+                setError();
+            }).catch(err => {
+                console.log("ERROR: ", err);
+                if(err.response){
+                    console.log("ERROR RESPONSE: ", err.response);
+                    setError(err.response.data.statusText);
+                } else {
+                    setError(err.message);
+                }
+                setMessage();
+            })  
+            console.log(data);   
+        };
+
+        
+            return (
+                <div className="container">
+                        <form className="form-control m-2" onSubmit={handleSubmit(savePerson)}>
+                            <div className="row">
+                                <div className= "col-12 m-2">
+                                    <input type="text" className="form-control" placeholder="Enter First Name" {...register("firstName", {required:true, maxLength: 20})} />
+                                    {errors.firstName && errors.firstName.type === "required" && <span className="text-danger">First Name is required</span>}
+                                    {errors.firstName && errors.firstName.type === "maxLength" && <span className="text-danger">Max Length exceeded</span>}
+                                </div>
+                                <div className= "col-12 m-2">
+                                    <input type="text" className="form-control" placeholder="Enter Last Name" {...register("lastName", {required:true, maxLength: 20})} />
+                                    {errors.lastName && errors.lastName.type === "required" && <span className="text-danger">Last Name is required</span>}
+                                    {errors.lastName && errors.lastName.type === "maxLength" && <span className="text-danger">Max Length exceeded</span>}
+                                </div>
+                                <div className="col-12 m-2">
+                                   <input type="text" className="form-control" placeholder="Enter E-mail Address" {...register("email", {required:true})}/>
+                                    {errors.email && <span className="text-danger">Email Address required</span>}
+                                </div>
+                                <div className="col-12 m-2">
+                                    <input type="text" className="form-control" placeholder="Enter Title" {...register("title", {required:true})}/>
+                                    {errors.title && <span className="text-danger">Title required</span>}
+                                </div>
+                                <div>
+                                     <button type="submit" className="btn btn-success btn-sm m-2">Add</button>
+                                     <button type="reset" className="btn btn-danger btn-sm m-2" >Reset</button>   
+                                </div>                                          
+                            </div>
+                        </form>   
+                </div>
+            );
+        };
+
+
+
+
+
+
+
+
+
+
  
 
     return (
         <div className="container">
-            CRUD Page
+           
+            <Form/>
+           
             <table className="table table-stripped">
             <TableHeader/>
             <TableRow list={persons}/>
             </table>
+
             <br/>
             <ShowPersonDetails/>
 

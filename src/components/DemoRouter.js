@@ -1,12 +1,11 @@
 
 import React from 'react';
-import { BrowserRouter as Router, Switch, Route, Link, useHistory, useParams, useLocation, Redirect } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Route, } from 'react-router-dom';
 import About from './About';
 import CrudDemo from './CrudDemo';
 import Header from './Header';
 import Home from './Home';
 import Person from './Person';
-import Welcome from './Welcome';
 
 const DemoRouter = () => {
 
@@ -15,7 +14,7 @@ const DemoRouter = () => {
             <Router>
                 <Header/>
                 <Switch>
-                    <Route exact path="/" component={Welcome}/>
+                    <Route exact path="/" component={Home}/>
                     <Route path="/home" component={Home}/>
                     <Route path="/person" component={Person}/>
                     <Route path="/about" component={About}/>
